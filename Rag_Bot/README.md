@@ -1,481 +1,195 @@
-Here is a cleaner, more professional GitHub-ready version. I also aligned it with your **React + Python/FastAPI + Docker + Redis + RAG** stack and kept the architecture flexible where you haven't finalized the exact vector database/LLM yet.
+# RAG-Powered Document Chat Assistant
 
-:::writing{variant="document" id="42618" title="RAG-Powered Document Chat Assistant — GitHub README"}
-# 🤖 RAG-Powered Document Chat Assistant
+A full-stack Retrieval-Augmented Generation (RAG) application that lets users upload their own documents and ask questions about them through a chat interface. Instead of answering purely from what the model already knows, the system looks up relevant passages from the uploaded documents first and then generates an answer grounded in that context, along with citations back to the source.
 
-A full-stack **Retrieval-Augmented Generation (RAG)** application that enables users to upload documents and interact with an AI assistant through a conversational interface.
+Status: work in progress.
 
-The system retrieves relevant information from uploaded documents and provides **context-aware, source-grounded responses with citations**, helping reduce hallucinations and making AI-generated answers more transparent and reliable.
+## Why this project
 
-> 🚧 **Project Status:** Currently in development
+Most LLM chatbots answer from whatever they learned during training, which means they can confidently make things up when asked about private or domain-specific material they were never trained on. This project gets around that by pairing an LLM with a retrieval step: documents are chunked, embedded, and stored in a vector database, and at query time the most relevant chunks are pulled in as context before the model generates a response.
 
----
+Broadly, the goals for this project are:
 
-## 🎯 Project Objective
+- Let users upload and process multiple documents
+- Search across that content semantically, not just by keyword
+- Retrieve relevant context before generating an answer
+- Return answers with citations back to the source material
+- Keep conversational context across a session
+- Use Redis for caching and session state
+- Wrap it all in a full-stack web app that's easy to run with Docker
 
-Traditional LLM-based chatbots rely primarily on the knowledge encoded in the model and may generate inaccurate or unsupported responses when working with private or domain-specific information.
+## Architecture
 
-This project addresses this limitation by implementing a **Retrieval-Augmented Generation pipeline** that connects an LLM with a user-provided document knowledge base.
-
-### Key objectives
-
-- 📄 Upload and process multiple documents
-- 🔍 Perform semantic search across document content
-- 🧠 Retrieve relevant information before generating responses
-- 🤖 Generate answers using an LLM with retrieved context
-- 📚 Provide source citations for generated answers
-- 💬 Maintain conversational context and session state
-- ⚡ Use Redis for caching and session management
-- 🌐 Provide a responsive full-stack web interface
-- 🐳 Containerize the application using Docker
-- 🏗️ Build a modular architecture suitable for future scaling
-
----
-
-# 🏗️ System Architecture
-
-```text
-┌──────────────────────────┐
-│      React Frontend      │
-│                          │
-│  Chat Interface          │
-│  Document Upload         │
-│  Source Citations        │
-└────────────┬─────────────┘
-             │
-             │ REST API
-             ▼
-┌──────────────────────────┐
-│     FastAPI Backend      │
-│                          │
-│ Authentication           │
-│ Document Processing      │
-│ Chat Orchestration       │
-│ RAG Pipeline             │
-└───────┬──────────┬───────┘
-        │          │
-        │          │
-        ▼          ▼
-┌────────────┐  ┌────────────────┐
-│   Redis    │  │  Vector Store  │
-│            │  │                │
-│ Sessions   │  │  Embeddings    │
-│ Cache      │  │  Semantic      │
-│ Context    │  │  Retrieval     │
-└────────────┘  └───────┬────────┘
-                        │
-                        ▼
-                 ┌──────────────┐
-                 │  Retriever   │
-                 │              │
-                 │ Top-K Chunks │
-                 └──────┬───────┘
-                        │
-                        ▼
-                 ┌──────────────┐
-                 │     LLM      │
-                 │              │
-                 │ Generation   │
-                 └──────┬───────┘
-                        │
-                        ▼
-                ┌─────────────────┐
-                │ Answer + Sources│
-                └─────────────────┘
 ```
-
----
-
-# 🛠️ Technology Stack
-
-| Layer | Technology | Purpose |
-|---|---|---|
-| **Frontend** | React | Chat interface and document upload |
-| **Backend** | Python, FastAPI | REST APIs, document processing and application logic |
-| **AI Architecture** | RAG | Retrieval and context-grounded generation |
-| **LLM** | Large Language Model | Natural-language answer generation |
-| **Embeddings** | Embedding Model | Converts document chunks and queries into vectors |
-| **Vector Database** | Qdrant / ChromaDB| Stores embeddings and enables semantic search |
-| **Cache & Sessions** | Redis | Session management, caching and conversational state |
-| **Communication** | REST API | Frontend ↔ Backend communication |
-| **Containerization** | Docker | Consistent development and deployment environment |
-| **Version Control** | Git & GitHub | Source control and project collaboration |
-
----
-
-# 🔄 Application Workflow
-
-The application follows a complete document ingestion and question-answering pipeline.
-
-## 1. 📄 Document Upload
-
-The user uploads one or more supported documents through the React interface.
-
-```text
-User
- ↓
 React Frontend
- ↓
-FastAPI API
- ↓
-Document Processing
-```
-
----
-
-## 2. 🔨 Document Processing
-
-The backend extracts text from the uploaded document and divides it into smaller, searchable chunks.
-
-```text
-Document
-   ↓
-Text Extraction
-   ↓
-Text Cleaning
-   ↓
-Chunking
-   ↓
-Embedding Generation
-```
-
-Chunking allows the system to retrieve only the most relevant sections instead of passing an entire document to the LLM.
-
----
-
-## 3. 🧠 Embedding & Storage
-
-Each document chunk is converted into a vector representation using an embedding model.
-
-```text
-Document Chunk
-      ↓
-Embedding Model
-      ↓
-Vector Representation
-      ↓
-Vector Database
-```
-
-The resulting embeddings are stored in the vector database for semantic retrieval.
-
----
-
-## 4. 💬 User Query
-
-The user submits a question through the chat interface.
-
-```text
-User Question
-      ↓
-React Frontend
-      ↓
+  - Chat interface
+  - Document upload
+  - Source citations
+        |
+        | REST API
+        v
 FastAPI Backend
+  - Authentication
+  - Document processing
+  - Chat orchestration
+  - RAG pipeline
+        |
+        |-----------------------|
+        v                       v
+     Redis                Vector Store
+  - Sessions             - Embeddings
+  - Cache                - Semantic retrieval
+  - Context                    |
+                                v
+                           Retriever
+                          - Top-K chunks
+                                |
+                                v
+                              LLM
+                          - Generation
+                                |
+                                v
+                     Answer + sources
 ```
 
----
+## Tech stack
 
-## 5. 🔍 Semantic Retrieval
+The frontend is built in React and handles the chat UI, document uploads, and displaying source citations alongside answers. The backend is Python with FastAPI, handling document processing, chat orchestration, and the RAG pipeline itself. Document chunks and queries are converted into vectors with an embedding model and stored in a vector database (Qdrant or ChromaDB, still being finalized). Redis handles sessions, caching, and conversational state, and the whole thing is containerized with Docker so it runs the same way locally and in production. Frontend and backend talk over a REST API, and the code is versioned with Git on GitHub.
 
-The user's question is converted into an embedding and compared against the stored document embeddings.
+## How it works
 
-```text
-User Query
-    ↓
-Query Embedding
-    ↓
-Similarity Search
-    ↓
-Top-K Relevant Chunks
+The application follows a fairly standard ingestion-then-query pipeline for RAG systems.
+
+**Uploading a document.** A user uploads one or more files through the React interface. That request goes to the FastAPI backend, which kicks off processing.
+
+**Processing.** The backend extracts text from the document, cleans it up, and splits it into smaller chunks. Chunking matters here — it means the system only has to retrieve the sections that are actually relevant to a question, instead of stuffing the entire document into the model's context window every time.
+
+**Embedding and storage.** Each chunk gets converted into a vector representation by an embedding model, and those vectors are stored in the vector database for later retrieval.
+
+**Asking a question.** The user sends a question through the chat interface, which goes to FastAPI the same way an upload does.
+
+**Retrieval.** The question itself gets embedded, and that embedding is compared against the stored document vectors to find the most similar chunks — the ones most likely to actually answer the question.
+
+**Generation.** Those retrieved chunks, along with the original question, get passed to the LLM, which generates an answer grounded in that context rather than just its own general knowledge.
+
+**Returning the answer.** The backend sends back the generated answer together with references to the source chunks it used, so the response shows up in the chat interface with citations attached. That's what gives users a way to actually verify where an answer came from, rather than just trusting it blindly.
+
+## Redis
+
+Redis sits between FastAPI and everything else as a fast in-memory layer. It's used for session management, keeping track of conversation state, caching frequently asked queries, and general temporary data the app needs quick access to. Nothing here depends on a slow database round-trip.
+
+## Docker setup
+
+Everything runs as containers — the React app, the FastAPI API, Redis, and the vector database. The frontend and backend talk over REST, and Docker Compose ties it all together so the same setup works in development and in production without surprises.
+
+## Where this could be used
+
+A few scenarios this kind of system fits well:
+
+**Enterprise knowledge assistant** — employees querying internal policies, technical docs, process manuals, and SOPs without digging through folders.
+
+**Customer support** — support teams pointing the assistant at product manuals, FAQs, and troubleshooting guides so it can answer with cited sources instead of guessing.
+
+**Legal and compliance** — working through contracts, regulations, and compliance documents where being able to trace an answer back to the original text actually matters.
+
+**Academic research** — students and researchers uploading papers, lecture notes, or books and asking questions directly against that material.
+
+**Employee onboarding** — new hires getting answers from handbooks, training materials, and internal documentation instead of waiting on someone else.
+
+**Personal use** — just uploading your own notes, reports, or study material and querying them like a personal knowledge base.
+
+## Features
+
+- Multi-document upload
+- Semantic search across document content
+- LLM-generated answers grounded in retrieved context
+- Source citations attached to responses
+- Conversational, session-aware chat
+- Redis-backed caching and session state
+- Fully containerized with Docker
+- REST API between frontend and backend
+- Modular backend designed to scale
+
+## Project structure
+
 ```
-
-The retriever selects the most relevant document sections to provide context for the LLM.
-
----
-
-## 6. 🤖 Context-Aware Generation
-
-The retrieved document chunks are combined with the user's question and passed to the LLM.
-
-```text
-User Question
-      +
-Retrieved Context
-      ↓
-     LLM
-      ↓
-Generated Answer
-```
-
-The model generates a response based on the retrieved information rather than relying only on its general knowledge.
-
----
-
-## 7. 📚 Answer & Source Citations
-
-The backend returns the generated response together with the relevant document sources.
-
-```text
-Generated Answer
-       +
-Source References
-       ↓
-React Chat Interface
-```
-
-This provides users with greater transparency and allows them to verify the information used to generate the answer.
-
----
-
-# ⚡ Redis Integration
-
-Redis is used as a high-performance in-memory data layer within the application.
-
-Potential use cases include:
-
-- Session management
-- Conversation state
-- Frequently requested query caching
-- Temporary application data
-- Context management
-- Performance optimization
-
-```text
-User
- ↓
-FastAPI
- ↓
-Redis
- ├── Session
- ├── Conversation Context
- └── Cached Responses
-```
-
----
-
-# 🐳 Docker Architecture
-
-The application is designed to run as a containerized full-stack system.
-
-```text
-                 Docker Environment
-                       │
-        ┌──────────────┼──────────────┐
-        ▼              ▼              ▼
-   React App      FastAPI API      Redis
-        │              │
-        │              └──────► Vector DB
-        │
-        └──────────────► REST API
-```
-
-Docker helps ensure consistent environments across development, testing and deployment.
-
----
-
-# 💡 Use Cases
-
-### 🏢 Enterprise Knowledge Assistant
-
-Employees can query internal:
-
-- Company policies
-- Technical documentation
-- Process manuals
-- Standard operating procedures
-- Internal knowledge bases
-
----
-
-### 🎧 Customer Support Assistant
-
-Support teams can use the system with:
-
-- Product manuals
-- FAQs
-- Troubleshooting guides
-- Product documentation
-
-The assistant can retrieve relevant information and provide cited responses.
-
----
-
-### ⚖️ Legal & Compliance Document Analysis
-
-Users can interact with:
-
-- Contracts
-- Regulations
-- Compliance documents
-- Legal documentation
-
-Source citations can help users trace answers back to the original documents.
-
----
-
-### 🎓 Academic Research Assistant
-
-Students and researchers can upload:
-
-- Research papers
-- Lecture notes
-- Books
-- Technical documentation
-
-and ask questions directly about the uploaded material.
-
----
-
-### 👨‍💼 Employee Onboarding
-
-Organizations can provide new employees with an AI assistant connected to:
-
-- Employee handbooks
-- Training materials
-- Company policies
-- Internal documentation
-
----
-
-### 📁 Personal Document Assistant
-
-Users can upload their own:
-
-- Notes
-- Reports
-- Project documents
-- Study materials
-
-and interact with them through natural-language queries.
-
----
-
-# ✨ Key Features
-
-- 📄 Multi-document upload
-- 🔍 Semantic document search
-- 🤖 LLM-powered responses
-- 📚 Source citations
-- 💬 Conversational interface
-- 🧠 Retrieval-Augmented Generation
-- ⚡ Redis-based caching and sessions
-- 🌐 Full-stack web application
-- 🐳 Dockerized architecture
-- 🔌 REST API architecture
-- 📈 Scalable and modular backend design
-
----
-
-# 📂 Project Structure
-
-```text
 rag-document-chat/
-│
-├── frontend/
-│   ├── src/
-│   ├── public/
-│   ├── package.json
-│   └── Dockerfile
-│
-├── backend/
-│   ├── auth/
-│   ├── chat/
-│   ├── documents/
-│   ├── rag/
-│   ├── retriever/
-│   ├── services/
-│   ├── main.py
-│   ├── requirements.txt
-│   └── Dockerfile
-│
-├── data/
-│
-├── docker-compose.yml
-├── .env.example
-├── .gitignore
-└── README.md
+|
+|-- frontend/
+|   |-- src/
+|   |-- public/
+|   |-- package.json
+|   |-- Dockerfile
+|
+|-- backend/
+|   |-- auth/
+|   |-- chat/
+|   |-- documents/
+|   |-- rag/
+|   |-- retriever/
+|   |-- services/
+|   |-- main.py
+|   |-- requirements.txt
+|   |-- Dockerfile
+|
+|-- data/
+|
+|-- docker-compose.yml
+|-- .env.example
+|-- .gitignore
+|-- README.md
 ```
 
----
+## Getting started
 
-# 🚀 Getting Started
+You'll need Node.js 18+, Python 3.10+, Docker and Docker Compose, Git, a running Redis instance, a vector database, and an API key for whichever LLM you're using.
 
-## Prerequisites
-
-Make sure the following are installed:
-
-- **Node.js 18+**
-- **Python 3.10+**
-- **Docker**
-- **Docker Compose**
-- **Git**
-- Redis
-- A supported vector database
-- An LLM API key
-
----
-
-## Clone the Repository
+Clone the repo:
 
 ```bash
 git clone https://github.com/<your-username>/<repository-name>.git
-
 cd <repository-name>
 ```
 
----
-
-## Backend Setup
+### Backend
 
 ```bash
 cd backend
-
 python -m venv venv
 ```
 
-### Windows
+Activate the virtual environment — on Windows:
 
 ```bash
 venv\Scripts\activate
 ```
 
-### Linux / macOS
+on Linux/macOS:
 
 ```bash
 source venv/bin/activate
 ```
 
-Install dependencies:
+Then install dependencies and start the server:
 
 ```bash
 pip install -r requirements.txt
-```
-
-Start the FastAPI server:
-
-```bash
 uvicorn main:app --reload
 ```
 
----
+### Frontend
 
-## Frontend Setup
-
-Open a new terminal:
+In a separate terminal:
 
 ```bash
 cd frontend
-
 npm install
-
 npm start
 ```
 
----
+## Environment variables
 
-# 🔐 Environment Variables
-
-Create a `.env` file based on `.env.example`.
+Copy `.env.example` to `.env` and fill in the values:
 
 ```env
 LLM_API_KEY=your_api_key
@@ -483,152 +197,49 @@ REDIS_URL=redis://localhost:6379
 VECTOR_DB_URL=your_vector_database_url
 ```
 
-> ⚠️ Never commit API keys, passwords, or other sensitive credentials to GitHub.
+Don't commit real API keys or credentials to the repo — keep them in `.env` and make sure it's gitignored.
 
----
+## Running with Docker
 
-# 🐳 Run with Docker
-
-Build and start the complete application:
+Build and start everything:
 
 ```bash
 docker compose up --build
 ```
 
-Stop the containers:
+Shut it down:
 
 ```bash
 docker compose down
 ```
 
----
+## API flow
 
-# 🔌 API Flow
+**Uploading a document:** `POST /documents/upload` triggers document processing, then text chunking, then embedding generation, and the resulting vectors land in the vector database.
 
-### Document Upload
+**Asking a question:** `POST /chat` processes the query, embeds it, runs semantic retrieval to pull relevant chunks, builds context from them, sends that to the LLM for generation, and returns the answer along with its sources.
 
-```text
-POST /documents/upload
-        │
-        ▼
-Document Processing
-        │
-        ▼
-Text Chunking
-        │
-        ▼
-Embedding Generation
-        │
-        ▼
-Vector Database
-```
+## What's next
 
-### Chat
+This is still an early-stage project, and there's a fair amount left to build:
 
-```text
-POST /chat
-     │
-     ▼
-Query Processing
-     │
-     ▼
-Query Embedding
-     │
-     ▼
-Semantic Retrieval
-     │
-     ▼
-Context Construction
-     │
-     ▼
-LLM Generation
-     │
-     ▼
-Answer + Sources
-```
+- User authentication and authorization
+- Multi-user document management
+- Streaming responses instead of waiting for the full answer
+- Better long-term conversation memory
+- A proper document management dashboard
+- Tighter citation and source tracking
+- Role-based access control
+- Actual evaluation and benchmarking of retrieval quality
+- Automated tests and a CI/CD pipeline
+- Monitoring and logging once this moves toward production
+- Support for more document formats
+- Better retrieval — reranking, hybrid keyword + semantic search
 
----
+## Why I'm building this
 
-# 🔮 Future Improvements
+This project is mostly a way to get hands-on with generative AI and RAG in particular — working through vector search, semantic retrieval, and how to wire an LLM up to a real knowledge base, while also building out the full-stack and infrastructure side: FastAPI, REST API design, Redis, Docker, and generally what it takes to move something like this toward production.
 
-The project is actively being developed. Planned improvements include:
+## Portfolio
 
-- [ ] User authentication and authorization
-- [ ] Multi-user document management
-- [ ] Streaming LLM responses
-- [ ] Advanced conversation memory
-- [ ] Document management dashboard
-- [ ] Improved citation and source tracking
-- [ ] Role-based access control
-- [ ] RAG evaluation and benchmarking
-- [ ] Automated testing
-- [ ] CI/CD pipeline
-- [ ] Application monitoring and logging
-- [ ] Production deployment
-- [ ] Support for additional document formats
-- [ ] Improved retrieval and reranking
-- [ ] Hybrid keyword + semantic search
-
----
-
-# 📊 RAG Pipeline Overview
-
-```text
-                 DOCUMENT INGESTION
-                        │
-                        ▼
-                 Text Extraction
-                        │
-                        ▼
-                     Chunking
-                        │
-                        ▼
-                Embedding Generation
-                        │
-                        ▼
-                  Vector Database
-                        │
-                        │
-                        ▼
-USER QUERY ──────► Query Embedding
-                        │
-                        ▼
-                  Similarity Search
-                        │
-                        ▼
-                 Relevant Context
-                        │
-                        ▼
-                       LLM
-                        │
-                        ▼
-                Generated Response
-                        │
-                        ▼
-                 Answer + Citations
-```
-
----
-
-# 🎯 Learning & Development Goals
-
-This project is being developed to gain practical experience in:
-
-- Generative AI
-- Retrieval-Augmented Generation
-- Large Language Models
-- Vector Search
-- Semantic Retrieval
-- Full-Stack Development
-- Python Backend Development
-- FastAPI
-- REST API Design
-- Redis
-- Docker
-- AI Application Architecture
-- Production-oriented Software Development
-
----
-🌐 Portfolio:  
 https://harshanramesh.netlify.app/
-
