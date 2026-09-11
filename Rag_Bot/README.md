@@ -85,11 +85,11 @@ Redis is used for fast access to active sessions, while PostgreSQL provides pers
 
 This allows the chatbot to handle follow-up questions such as:
 
-> "What is the main idea of this document?"
+ "What is the main idea of this document?"
 
 followed by:
 
-> "Can you explain the second point in more detail?"
+ "Can you explain the second point in more detail?"
 
 without losing the context of the conversation.
 
@@ -126,7 +126,7 @@ The application uses a few additional services to make the system easier to scal
                                 BERTScore
 ```
 
-### Redis
+Redis
 
 Used for:
 
