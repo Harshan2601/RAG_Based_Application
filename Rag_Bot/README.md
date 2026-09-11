@@ -113,7 +113,7 @@ The application uses a few additional services to make the system easier to scal
           |
           v
    Local Embeddings
-   + Cross-Encoder
+    Cross-Encoder
 
 
           FastAPI
@@ -124,7 +124,7 @@ The application uses a few additional services to make the system easier to scal
    Kafka         PostgreSQL     Evaluation
    Events        Persistence      RAGAS
                                 BERTScore
-```
+
 
 Redis
 
