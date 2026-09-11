@@ -69,7 +69,7 @@ The document metadata and ingestion status are stored separately in PostgreSQL.
 
 When the user asks a question, the query is converted into an embedding and searched against the document chunks stored in Qdrant.
 
-Instead of directly sending all retrieved chunks to the LLM, the results are passed through a **Cross-Encoder reranker**. This helps select the chunks that are actually most relevant to the question.
+Instead of directly sending all retrieved chunks to the LLM, the results are passed through a Cross-Encoder reranker. This helps select the chunks that are actually most relevant to the question.
 
 3. Answer Generation
 
