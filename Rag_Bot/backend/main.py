@@ -124,3 +124,5 @@ def ingest_document(document_id: str):
     }
 
     document["status"] = "ingested"
+
+    
